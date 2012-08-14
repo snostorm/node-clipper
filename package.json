@@ -1,0 +1,19 @@
+{
+  "name": "clipper",
+  "version": "v0.1",
+  "main": "./lib/clipper.js",
+  "keywords": ["polygon", "polygons", "offset"],
+  "description": "Clipper Library Bindings",
+  "author": { 
+    "name" : "Sean Ouimet (Redman Technologies)",
+    "email" : "seano@redmantech.com",
+    "url" : "http://www.redmantech.com/"
+  },
+  "engines": {
+    "node": ">=0.8.0"
+  },
+  "repository" : { 
+    "type" : "git",
+    "url" : "https://github.com/snostorm/node-clipper.git"
+  }
+}
