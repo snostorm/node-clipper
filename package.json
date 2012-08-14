@@ -1,6 +1,6 @@
 {
   "name": "clipper",
-  "version": "v0.1",
+  "version": "v0.1.0",
   "main": "./lib/clipper.js",
   "keywords": ["polygon", "polygons", "offset"],
   "description": "Clipper Library Bindings",
