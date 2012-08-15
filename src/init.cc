@@ -14,6 +14,7 @@ v8::Handle<Value> Method(const Arguments& args) {
 
   // if (args[0]->IsArray()) {
     v8::Local<v8::Array> points = v8::Array::Cast(*args[0]);
+
     Polygons polyshape(1);
     Polygon polyout;
 
@@ -49,7 +50,7 @@ v8::Handle<Value> Method(const Arguments& args) {
     }
 
   // }
-  // return scope.Close(v8::Undefined());
+  return scope.Close(v8::Undefined());
 }
 
 extern "C" {
