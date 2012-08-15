@@ -57,5 +57,5 @@ extern "C" {
     target->Set(String::NewSymbol("offset"),
       FunctionTemplate::New(Method)->GetFunction());
   }
-  NODE_MODULE(node_clipper, init)
+  NODE_MODULE(clipper, init)
 }
