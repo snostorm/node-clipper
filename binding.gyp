@@ -5,6 +5,8 @@
       "sources": [ 
         "src/init.cc"
       ],
+      "cflags!": [ "-fno-exceptions" ],
+      "cflags_cc!": [ "-fno-exceptions" ],
       "conditions": [
         ['OS=="mac"', {
           'xcode_settings': {
