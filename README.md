@@ -4,7 +4,7 @@ A node.js wrapper for the [Clipper polygon clipper](http://www.angusj.com/delphi
 
 ## Project State
 
-The wrapper exposes a lot of useful functions of clipper library to node.js. The function "minimum" is an outstanding feature to compute the most inner point of complex polygons with inner and outer borders. It is very useful to get the perfect point for a placemark inside the polygon.
+The wrapper exposes and extends functions of clipper library to node.js. The function "minimum" is an outstanding feature to compute the most inner point of complex polygons with inner and outer borders. It is very useful to get the perfect point for a placemark inside the polygon.
 
 
 ## Data structures
@@ -29,7 +29,7 @@ var poly= [ [ v1, v2 ], [ v3, v4 ], [ v5, v6 ], [ v7, v8 ] ];
 
 ### Polyshape
 
-The polyshape structure is an array of polygons. The first element in the array is the outer border polygon (points of this polygon clockwise oriented) followed by any number of inner border polygons with orientation counterclockwise:
+The polyShape structure is an array of polygons. The first element in the array is the outer border polygon (points of this polygon counterclockwise oriented) followed by any number of inner border polygons with orientation clockwise:
 ```javascript
 var polyShape= [
   [ [ v1, v2 ], [ v3, v4 ], [ v5, v6 ], [ v7, v8 ] ],
@@ -44,7 +44,7 @@ var polyShape= [
 ### setDebug
 
 Sets the debug level in the module. Default is debug level 0.
-
+Example:
 ```javascript
 'use strict';
 
@@ -74,6 +74,36 @@ clipper.fixOrientation(square, 'integer');
 console.log('\n\nfunction "fixOrientation" with debugLevel 4:\n');
 clipper.setDebug(4);
 clipper.fixOrientation(square, 'integer');
+```
+
+
+
+### orientation
+
+Get orientation of all polygons in a polyShape array as array of boolean.
+Example:
+```javascript
+'use strict';
+
+var clipper= require('../build/Release/clipper');
+
+
+var squareOuter= [ [10, 0], [10, 10], [0, 10], [0, 0] ];
+var squareInner= [ [3, 3], [3, 7], [7, 7], [7, 3] ];
+var polyShape= [ squareOuter, squareInner ];
+
+
+/*
+ * get orientation of all polygons in a polyShape array
+ *
+ * clipper.orientation(polyShape, numberType);
+ *
+ * polyShape:  polygons as polyShape array
+ * numberType: 'integer' || 'double'
+ *
+ * result:     array of boolean, true: counterclockwise, false: clockwise
+ */
+console.log(clipper.orientation(polyShape, 'integer'));
 ```
 
 
