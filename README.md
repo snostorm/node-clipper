@@ -61,7 +61,7 @@ var square= [ [ [0, 0], [0, 10], [10, 10], [10, 0] ] ];
  * set debug level
  * messages goes directly to the console
  *
- * result= clipper.setDebug(debugLevel);
+ * clipper.setDebug(debugLevel);
  *
  * debugLevel: integer 0..4
  * 0:    no debug output
@@ -140,9 +140,46 @@ console.log('\n\nexpanded, offset= 2, inner border disappears:\n', clipper.offse
 ```
 
 
+### minimum
+
+Generate minimum polygon from polyShape. Read comments in the example to see, how it works.
+
+```javascript
+'use strict';
+
+var clipper= require('../build/Release/clipper');
+
+var squareOuter= [ [10, 0], [100, 100], [0, 10], [0, 0] ];
+var squareInner= [ [3, 3], [3, 7], [7, 7], [7, 3] ];
+var polyShape= [ squareOuter, squareInner ];
+
+/*
+ * compute minimum polygon from a polyShape array
+ * the resulting polygon is normally a very very small triangle
+ * this algorithm cannot work for two exact centered rectangles
+ * it wont work for small integer numbers too, double type is recommended
+ * with successive approximation a polygon offset factor is generated
+ * and the shrinked result is returned
+ * this process is CPU intensive for complex polygons
+ *
+ * result= clipper.minimum(polyShape, numberType, unused, joinType, miterLimit);
+ *
+ * polyShape:  polygons as polyShape array
+ * numberType: 'integer' || 'double'
+ * unused:     unused
+ * joinType:   'jtMiter' || 'jtSquare' || 'jtRound'
+ * miterLimit: limit of iterations for offset calculation in clipper lib
+ *
+ * result:     polyShape with minimum polygon
+ */
+console.log('original polygon:\n', polyShape);
+console.log('\n\nminimum polygon:\n', clipper.minimum(polyShape, 'integer', 0, 'jtMiter', 10));
+```
+
+
 ### clip
 
-Clip two polygons. The result may produce multiple polygons. See also the [clipper documentation for clip](http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Types/ClipType.htm)
+Clip two polygons. The result may produce multiple polygons. See also the [clipper documentation for clip](http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Types/ClipType.htm).
 
 ```javascript
 'use strict';
@@ -175,7 +212,7 @@ var polyClip= [ outerClip, innerClip ];
  * numberType:  'integer' || 'double'
  * clipType:    'ctIntersection' || 'ctUnion' || 'ctDifference' || 'ctXor'
  *
- * result:     polyShape with minimum polygon
+ * result:     polyShape with clipped polygons
  */
 console.log('polygon subject:\n', polySubject);
 console.log('\n\npolygon clip:\n', polyClip);
@@ -185,7 +222,7 @@ console.log('\n\nsolution:\n', util.inspect(clipper.clip(polySubject, polyClip, 
 
 ### clean
 
-Clean polygon. See also the [clipper documentation for clean](http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Functions/CleanPolygons.htm)
+Clean polygon. See also the [clipper documentation for clean](http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Functions/CleanPolygons.htm).
 
 ```javascript
 'use strict';
@@ -214,7 +251,7 @@ console.log('\n\ncleaned polygon:\n', clipper.clean(polyShape, 'integer', 3));
 
 ### simplify
 
-Simplify polygon. See also the [clipper documentation for simplify](http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Functions/SimplifyPolygons.htm)
+Simplify polygon. See also the [clipper documentation for simplify](http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Functions/SimplifyPolygons.htm).
 
 ```javascript
 'use strict';
