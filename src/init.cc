@@ -33,13 +33,24 @@ Polygons v8ArrayToPolygons(v8::Handle<Array> inOutPolygons, bool doubleType) {
     if (debug > 1) std::cout << "polygonArray: length: " << len << std::endl;
     #endif
 
+    //no polyshape with less than 1 polygon possible
+    if (len < 1) return polyshape;
+
     for (int i = 0; i < len; i++) {
         v8::Local<v8::Array> polyLine = v8::Local<v8::Array>::Cast(inOutPolygons->Get(i));
         #ifdef DEBUG
         if (debug > 2) std::cout << "polyLine: length: " << polyLine->Length() << std::endl;
         #endif
+
+        //no polygon with less than 3 points
+        if (polyLine->Length() < 3) continue;
+
         for (unsigned int j = 0; j < polyLine->Length(); j++) {
             v8::Local<v8::Array> point = v8::Local<v8::Array>::Cast(polyLine->Get(j));
+
+            //no point with less than 2 numbers
+            if (point->Length() < 2) continue;
+
             v8::Local<v8::Value> x = point->Get(0);
             v8::Local<v8::Value> y = point->Get(1);
             IntPoint p;
@@ -117,7 +128,7 @@ void doFixOrientation(Polygons &polyshape) {
 }
 
 
-v8::Local<String> checkOffsetArguments(const Arguments& args, int checkLength) {
+v8::Local<String> checkArguments(const Arguments& args, int checkLength) {
     v8::Local<String> result = String::New("");
 
     /* check args for wrong function call
@@ -179,7 +190,7 @@ v8::Handle<Value> orientation(const Arguments& args) {
 
     bool doubleType = false;
 
-    v8::Local<String> errMsg = checkOffsetArguments(args, 2);
+    v8::Local<String> errMsg = checkArguments(args, 2);
     if (errMsg->Length() > 0) {
         ThrowException(Exception::TypeError(errMsg));
         return scope.Close(v8::Undefined());
@@ -211,7 +222,7 @@ v8::Handle<Value> offset(const Arguments& args) {
     long delta;
     bool doubleType = false;
 
-    v8::Local<String> errMsg = checkOffsetArguments(args, 3);
+    v8::Local<String> errMsg = checkArguments(args, 3);
     if (errMsg->Length() > 0) {
         ThrowException(Exception::TypeError(errMsg));
         return scope.Close(v8::Undefined());
@@ -281,7 +292,7 @@ v8::Handle<Value> minimum(const Arguments& args) {
     double miterLimit = 30.0;
     bool doubleType = false;
 
-    v8::Local<String> errMsg = checkOffsetArguments(args, 2);
+    v8::Local<String> errMsg = checkArguments(args, 2);
     if (errMsg->Length() > 0) {
         ThrowException(Exception::TypeError(errMsg));
         return scope.Close(v8::Undefined());
@@ -399,7 +410,7 @@ v8::Handle<Value> clip(const Arguments& args) {
     bool doubleType = false;
     ClipType clipType = ctIntersection;
 
-    v8::Local<String> errMsg = checkOffsetArguments(args, 1);
+    v8::Local<String> errMsg = checkArguments(args, 1);
     if (errMsg->Length() > 0) {
         ThrowException(Exception::TypeError(errMsg));
         return scope.Close(v8::Undefined());
@@ -474,7 +485,7 @@ v8::Handle<Value> clean(const Arguments& args) {
     bool doubleType = false;
     double distance = 1.415;
 
-    v8::Local<String> errMsg = checkOffsetArguments(args, 2);
+    v8::Local<String> errMsg = checkArguments(args, 2);
     if (errMsg->Length() > 0) {
         ThrowException(Exception::TypeError(errMsg));
         return scope.Close(v8::Undefined());
@@ -515,7 +526,7 @@ v8::Handle<Value> fixOrientation(const Arguments& args) {
     v8::HandleScope scope;
     bool doubleType = false;
 
-    v8::Local<String> errMsg = checkOffsetArguments(args, 2);
+    v8::Local<String> errMsg = checkArguments(args, 2);
     if (errMsg->Length() > 0) {
         ThrowException(Exception::TypeError(errMsg));
         return scope.Close(v8::Undefined());
@@ -541,7 +552,7 @@ v8::Handle<Value> simplify(const Arguments& args) {
     v8::HandleScope scope;
     bool doubleType = false;
 
-    v8::Local<String> errMsg = checkOffsetArguments(args, 2);
+    v8::Local<String> errMsg = checkArguments(args, 2);
     if (errMsg->Length() > 0) {
         ThrowException(Exception::TypeError(errMsg));
         return scope.Close(v8::Undefined());
