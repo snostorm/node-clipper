@@ -6,6 +6,12 @@ A node.js wrapper for the [Clipper polygon clipper](http://www.angusj.com/delphi
 
 The wrapper exposes and extends functions of clipper library to node.js. The function "minimum" is an outstanding feature to compute the most inner point of complex polygons with inner and outer borders. It is very useful to get the perfect point for a placemark inside the polygon.
 
+## Installation
+
+```bash
+node-gyp configure
+node-gyp build
+```
 
 ## Data structures
 
@@ -38,7 +44,6 @@ var polyShape= [
 ```
 
 
-
 ## Bindings
 
 ### setDebug
@@ -50,9 +55,7 @@ Example:
 
 var clipper= require('../build/Release/clipper');
 
-
 var square= [ [ [0, 0], [0, 10], [10, 10], [10, 0] ] ];
-
 
 /*
  * set debug level
@@ -77,7 +80,6 @@ clipper.fixOrientation(square, 'integer');
 ```
 
 
-
 ### orientation
 
 Get orientation of all polygons in a polyShape array as array of boolean.
@@ -87,11 +89,9 @@ Example:
 
 var clipper= require('../build/Release/clipper');
 
-
 var squareOuter= [ [10, 0], [10, 10], [0, 10], [0, 0] ];
 var squareInner= [ [3, 3], [3, 7], [7, 7], [7, 3] ];
 var polyShape= [ squareOuter, squareInner ];
-
 
 /*
  * get orientation of all polygons in a polyShape array
@@ -107,28 +107,35 @@ console.log(clipper.orientation(polyShape, 'integer'));
 ```
 
 
-### Offset
+### offset
 
-See the [clipper documentation for Offset](http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Functions/OffsetPaths.htm))
-in order to get an idea of how this is used.
+See the [clipper documentation for Offset](http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Functions/OffsetPaths.htm) in order to get an idea of how this is used.
 
 ```javascript
-clipper = require('../build/Release/clipper')
+'use strict';
 
-/*a
-  ## Offset
-  * arguments: flattened_coordinate_path, offset
-  * where: offset can be positive or negative (negative will go inside the polygon, positive will expand outside)
-*/
-flattened_coordinate_path = [0, 0, 0, 10, 10, 10, 10, 0]
+var clipper= require('../build/Release/clipper');
 
-// A negative offset gets an offset inside our Polygon:
-inner_highlight_path = clipper.offset(flattened_coordinate_path, -2)
-console.log(inner_highlight_path)
-// returns [ [ 2, 2, 8, 2, 8, 8, 2, 8 ] ]
+var squareOuter= [ [10, 0], [10, 10], [0, 10], [0, 0] ];
+var squareInner= [ [3, 3], [3, 7], [7, 7], [7, 3] ];
+var polyShape= [ squareOuter, squareInner ];
 
-// A positive offset gets an offset outside our Polygon:
-outter_highlight_path = clipper.offset(flattened_coordinate_path, 2)
-console.log(outter_highlight_path)
-// returns [ [ -2, 12, -2, -2, 12, -2, 12, 12 ] ]
+/*
+ * offset polygons in a polyShape array.
+ * positive offset: outer borders are expanded, inner borders are shrinked
+ * negative offset: outer borders are shrinked, inner borders are expanded
+ *
+ * clipper.offset(polyShape, numberType, offset);
+ *
+ * polyShape:  polygons as polyShape array
+ * numberType: 'integer' || 'double'
+ * offset:     number
+ *
+ * result:     polyShape with offset
+ */
+console.log('original polygon:\n', polyShape);
+console.log('\n\nshrinked, offset= -1:\n', clipper.offset(polyShape, 'integer', -1));
+console.log('\n\nexpanded, offset= 2, inner border disappears:\n', clipper.offset(polyShape, 'integer', 2));
 ```
+
+
