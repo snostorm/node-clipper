@@ -60,7 +60,8 @@ var square= [ [ [0, 0], [0, 10], [10, 10], [10, 0] ] ];
 /*
  * set debug level
  * messages goes directly to the console
- * clipper.setDebug(debugLevel);
+ *
+ * result= clipper.setDebug(debugLevel);
  *
  * debugLevel: integer 0..4
  * 0:    no debug output
@@ -96,7 +97,7 @@ var polyShape= [ squareOuter, squareInner ];
 /*
  * get orientation of all polygons in a polyShape array
  *
- * clipper.orientation(polyShape, numberType);
+ * result= clipper.orientation(polyShape, numberType);
  *
  * polyShape:  polygons as polyShape array
  * numberType: 'integer' || 'double'
@@ -109,7 +110,7 @@ console.log(clipper.orientation(polyShape, 'integer'));
 
 ### offset
 
-See the [clipper documentation for Offset](http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Functions/OffsetPaths.htm) in order to get an idea of how this is used.
+See the [clipper documentation for offset](http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Functions/OffsetPaths.htm) in order to get an idea of how this is used.
 
 ```javascript
 'use strict';
@@ -125,7 +126,7 @@ var polyShape= [ squareOuter, squareInner ];
  * positive offset: outer borders are expanded, inner borders are shrinked
  * negative offset: outer borders are shrinked, inner borders are expanded
  *
- * clipper.offset(polyShape, numberType, offset);
+ * result= clipper.offset(polyShape, numberType, offset);
  *
  * polyShape:  polygons as polyShape array
  * numberType: 'integer' || 'double'
@@ -139,3 +140,131 @@ console.log('\n\nexpanded, offset= 2, inner border disappears:\n', clipper.offse
 ```
 
 
+### clip
+
+Clip two polygons. The result may produce multiple polygons. See also the [clipper documentation for clip](http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Types/ClipType.htm)
+
+```javascript
+'use strict';
+
+var clipper= require('../build/Release/clipper');
+var util= require('util');
+
+var outerSubject= [ [10, 0], [100, 100], [0, 10], [0, 0] ];
+var innerSubject= [ [3, 3], [3, 7], [7, 7], [7, 3] ];
+var polySubject= [ outerSubject, innerSubject ];
+
+var outerClip= [ [20, 0], [150, 100], [0, 50], [0, 0] ];
+var innerClip= [ [13, 13], [13, 17], [17, 17], [17, 13] ];
+var polyClip= [ outerClip, innerClip ];
+
+
+/*
+ * compute minimum polygon from a polyShape array
+ * the resulting polygon is normally a very very small triangle
+ * this algorithm cannot work for two exact centered rectangles
+ * it wont work for small integer numbers too, double type is recommended
+ * with successive approximation a polygon offset factor is generated
+ * and the shrinked result is returned
+ * this process is CPU intensive for complex polygons
+ *
+ * result= clipper.minimum(polySubject, polyClip, numberType, clipType);
+ *
+ * polySubject: polygons as polyShape array
+ * polyClip:    polygons as polyShape array
+ * numberType:  'integer' || 'double'
+ * clipType:    'ctIntersection' || 'ctUnion' || 'ctDifference' || 'ctXor'
+ *
+ * result:     polyShape with minimum polygon
+ */
+console.log('polygon subject:\n', polySubject);
+console.log('\n\npolygon clip:\n', polyClip);
+console.log('\n\nsolution:\n', util.inspect(clipper.clip(polySubject, polyClip, 'integer', 'ctIntersection'), false, 5));
+```
+
+
+### clean
+
+Clean polygon. See also the [clipper documentation for clean](http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Functions/CleanPolygons.htm)
+
+```javascript
+'use strict';
+
+var clipper= require('../build/Release/clipper');
+
+var outer= [ [10, 0], [100, 100], [0, 10], [0, 0] ];
+var inner= [ [3, 3], [3, 7], [7, 6], [7, 3] ];
+var polyShape= [ outer, inner ];
+
+/*
+ * clean polygon
+ *
+ * result= clipper.clean(polyShape, numberType, distance);
+ *
+ * polyShape:  polygons as polyShape array
+ * numberType: 'integer' || 'double'
+ * distance:   distance of neighbour vertices
+ *
+ * result:     polyShape with minimum polygon
+ */
+console.log('original polygon:\n', polyShape);
+console.log('\n\ncleaned polygon:\n', clipper.clean(polyShape, 'integer', 3));
+```
+
+
+### simplify
+
+Simplify polygon. See also the [clipper documentation for simplify](http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Functions/SimplifyPolygons.htm)
+
+```javascript
+'use strict';
+
+var clipper= require('../build/Release/clipper');
+
+var outer= [ [10, 0], [100, 100], [101, 100], [100, 100], [0, 10], [0, 0] ];
+var inner= [ [3, 3], [3, 7], [7, 6], [7, 3] ];
+var polyShape= [ outer, inner ];
+
+/*
+ * simplify polygon
+ *
+ * result= clipper.simplify(polyShape, numberType);
+ *
+ * polyShape:  polygons as polyShape array
+ * numberType: 'integer' || 'double'
+ *
+ * result:     polyShape with simplified polygon
+ */
+console.log('original polygon:\n', polyShape);
+console.log('\n\nsimplified polygon:\n', clipper.simplify(polyShape, 'integer'));
+```
+
+
+### fixOrientation
+
+Fix orientation of all polygons an a polyShape array.
+
+```javascript
+'use strict';
+
+var clipper= require('../build/Release/clipper');
+
+var counterclockwise= [ [10, 0], [10, 10], [0, 10], [0, 0] ];
+var clockwise= [ [3, 3], [7, 7], [3, 7], [7, 3] ];
+var polyShape= [ counterclockwise, clockwise ];
+
+/*
+ * fix orientation of polygons in a polyShape array
+ * first element (outer border): orientation must be true
+ * all other elements (inner borders): orientation false
+ *
+ * result= clipper.fixOrientation(polyShape, numberType);
+ *
+ * polyShape:  polygons as polyShape array
+ * numberType: 'integer' || 'double'
+ *
+ * result:     polyShape with fixed orientations
+ */
+console.log('original polygon:\n', polyShape);
+console.log('\n\norientation of inner and outer borders fixed:\n', clipper.fixOrientation(polyShape, 'integer'));
+```
