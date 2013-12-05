@@ -9,7 +9,7 @@ var polyShape= [ squareOuter, squareInner ];
 /*
  * get orientation of all polygons in a polyShape array
  *
- * clipper.orientation(polyShape, numberType);
+ * result= clipper.orientation(polyShape, numberType);
  *
  * polyShape:  polygons as polyShape array
  * numberType: 'integer' || 'double'

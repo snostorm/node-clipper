@@ -11,7 +11,7 @@ var polyShape= [ squareOuter, squareInner ];
  * positive offset: outer borders are expanded, inner borders are shrinked
  * negative offset: outer borders are shrinked, inner borders are expanded
  *
- * clipper.offset(polyShape, numberType, offset);
+ * result= clipper.offset(polyShape, numberType, offset);
  *
  * polyShape:  polygons as polyShape array
  * numberType: 'integer' || 'double'
