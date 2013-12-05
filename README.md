@@ -29,7 +29,7 @@ var poly= [ [ v1, v2 ], [ v3, v4 ], [ v5, v6 ], [ v7, v8 ] ];
 
 ### Polyshape
 
-The polyshape structure is an array of polygons. The first element in the array is the outer border polygon (points of this polygon clockwise oriented) followed by any number of inner border polygons:
+The polyshape structure is an array of polygons. The first element in the array is the outer border polygon (points of this polygon clockwise oriented) followed by any number of inner border polygons with orientation counterclockwise:
 ```javascript
 var polyShape= [
   [ [ v1, v2 ], [ v3, v4 ], [ v5, v6 ], [ v7, v8 ] ],
@@ -40,6 +40,42 @@ var polyShape= [
 
 
 ## Bindings
+
+### setDebug
+
+Sets the debug level in the module. Default is debug level 0.
+
+```javascript
+'use strict';
+
+var clipper= require('../build/Release/clipper');
+
+
+var square= [ [ [0, 0], [0, 10], [10, 10], [10, 0] ] ];
+
+
+/*
+ * set debug level
+ * messages goes directly to the console
+ * clipper.setDebug(debugLevel);
+ *
+ * debugLevel: integer 0..4
+ * 0:    no debug output
+ * 1..3: more debug output
+ * >=4:  all debug messages
+ */
+console.log('function "fixOrientation" with debugLevel 0:\n');
+clipper.fixOrientation(square, 'integer');
+
+console.log('\n\nfunction "fixOrientation" with debugLevel 3:\n');
+clipper.setDebug(3);
+clipper.fixOrientation(square, 'integer');
+
+console.log('\n\nfunction "fixOrientation" with debugLevel 4:\n');
+clipper.setDebug(4);
+clipper.fixOrientation(square, 'integer');
+```
+
 
 ### Offset
 
