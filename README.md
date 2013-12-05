@@ -18,21 +18,21 @@ A value is a javascript number. In clipper library all numbers are integer. So i
 A point is an array of two values:
 ```javascript
 var p= [ v1, v2 ];
-´´´
+```
 
 ### Polygon
 
 A polygon is an array of Points:
 ```javascript
 var poly= [ [ v1, v2 ], [ v3, v4 ], [ v5, v6 ], [ v7, v8 ] ];
-´´´
+```
 
 ### Polyshape
 
 The polyshape structure is an array of polygons. The first element in the array is the outer border polygon (points of this polygon clockwise oriented) followed by any number of inner border polygons:
 ```javascript
 var polyShape= [ [ [ v1, v2 ], [ v3, v4 ], [ v5, v6 ], [ v7, v8 ] ], [ [ v9, v10 ], [ v11, v12 ], [ v13, v14 ], [ v15, v16 ] ] ];
-´´´
+```
 
 
 
