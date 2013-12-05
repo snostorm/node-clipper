@@ -13,12 +13,8 @@ var polyClip= [ outerClip, innerClip ];
 
 
 /*
- * compute minimum polygon from a polyShape array
- * the resulting polygon is normally a very very small triangle
- * this algorithm cannot work for two exact centered rectangles
- * it wont work for small integer numbers too, double type is recommended
- * with successive approximation a polygon offset factor is generated
- * and the shrinked result is returned
+ * clip two polygons
+ * multiple types of clipping are available
  * this process is CPU intensive for complex polygons
  *
  * result= clipper.clip(polySubject, polyClip, numberType, clipType);
