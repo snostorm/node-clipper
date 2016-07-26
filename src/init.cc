@@ -7,28 +7,38 @@
 #include "clipper.hpp"
 #include "clipper.cpp"
 
-using namespace node;
-using namespace v8;
+namespace demo {
+
+using v8::FunctionCallbackInfo;
+using v8::Exception;
+using v8::Isolate;
+using v8::Local;
+using v8::Object;
+using v8::String;
+using v8::Array;
+using v8::Value;
+using v8::Handle;
+using v8::Number;
+using v8::Boolean;
+
 using namespace ClipperLib;
+
 const unsigned long doubleFactor = 0x4000000000000;
 int debug = 0;
 
 
-v8::Handle<Value> setDebug(const Arguments& args) {
-    v8::HandleScope scope;
-
+void setDebug(const FunctionCallbackInfo<Value>& args) {
     if (args.Length() > 0 && args[0]->IsNumber()) {
         debug = args[0]->NumberValue();
     }
 
-    return scope.Close(v8::Number::New(debug));
+    args.GetReturnValue().Set(debug);
 }
 
 
-
-Polygons v8ArrayToPolygons(v8::Handle<Array> inOutPolygons, bool doubleType) {
+Paths v8ArrayToPolygons(Handle<Array> inOutPolygons, bool doubleType) {
     int len = inOutPolygons->Length();
-    Polygons polyshape(len);
+    Paths polyshape(len);
     #ifdef DEBUG
     if (debug > 1) std::cout << "polygonArray: length: " << len << std::endl;
     #endif
@@ -37,7 +47,7 @@ Polygons v8ArrayToPolygons(v8::Handle<Array> inOutPolygons, bool doubleType) {
     if (len < 1) return polyshape;
 
     for (int i = 0; i < len; i++) {
-        v8::Local<v8::Array> polyLine = v8::Local<v8::Array>::Cast(inOutPolygons->Get(i));
+        Local<Array> polyLine = Local<Array>::Cast(inOutPolygons->Get(i));
         #ifdef DEBUG
         if (debug > 2) std::cout << "polyLine: length: " << polyLine->Length() << std::endl;
         #endif
@@ -46,13 +56,13 @@ Polygons v8ArrayToPolygons(v8::Handle<Array> inOutPolygons, bool doubleType) {
         if (polyLine->Length() < 3) continue;
 
         for (unsigned int j = 0; j < polyLine->Length(); j++) {
-            v8::Local<v8::Array> point = v8::Local<v8::Array>::Cast(polyLine->Get(j));
+            Local<Array> point = Local<Array>::Cast(polyLine->Get(j));
 
             //no point with less than 2 numbers
             if (point->Length() < 2) continue;
 
-            v8::Local<v8::Value> x = point->Get(0);
-            v8::Local<v8::Value> y = point->Get(1);
+            Local<Value> x = point->Get(0);
+            Local<Value> y = point->Get(1);
             IntPoint p;
             if (doubleType) {
                 p = IntPoint(
@@ -83,22 +93,23 @@ long signedSum(long a, long b) {
 }
 
 
-v8::Handle<Array> polygonsToV8Array(Polygons polygons, bool doubleType) {
-    v8::Handle<v8::Array> result = v8::Array::New();
+Handle<Array> polygonsToV8Array(Isolate* isolate, Paths polygons, bool doubleType) {
+    Handle<Array> result = Array::New(isolate);
     for (unsigned int i = 0; i < polygons.size(); i++) {
-        v8::Handle<v8::Array> points = v8::Array::New();
+        Handle<Array> points = Array::New(isolate);
         for (unsigned int k = 0; k < polygons[i].size(); k++) {
-        IntPoint ip = polygons[i][k];
-            v8::Local<v8::Number> x;
-            v8::Local<v8::Number> y;
+            IntPoint ip = polygons[i][k];
+            Local<Number> x;
+            Local<Number> y;
             if (doubleType) {
-                x = v8::Number::New((double)ip.X / (double)doubleFactor);
-                y = v8::Number::New((double)ip.Y / (double)doubleFactor);
+
+                x = Number::New(isolate, (double)ip.X / (double)doubleFactor);
+                y = Number::New(isolate, (double)ip.Y / (double)doubleFactor);
             } else {
-                x = v8::Number::New(ip.X);
-                y = v8::Number::New(ip.Y);
+                x = Number::New(isolate, ip.X);
+                y = Number::New(isolate, ip.Y);
             }
-            v8::Handle<v8::Array> point = v8::Array::New();
+            Handle<Array> point = Array::New(isolate);
             point->Set(point->Length(), x);
             point->Set(point->Length(), y);
             points->Set(points->Length(), point);
@@ -109,17 +120,17 @@ v8::Handle<Array> polygonsToV8Array(Polygons polygons, bool doubleType) {
 }
 
 
-void doFixOrientation(Polygons &polyshape) {
-    if (!ClipperLib::Orientation(polyshape[0])) {
-        ClipperLib::ReversePolygon(polyshape[0]);
+void doFixOrientation(Paths &polyshape) {
+    if (!Orientation(polyshape[0])) {
+        ReversePath(polyshape[0]);
         #ifdef DEBUG
         if (debug > 0) std::cout << "doFixOrientation: outerPoints reversed" << std::endl;
         #endif
     }
 
     for (unsigned int i = 1; i < polyshape.size(); i++) {
-        if (ClipperLib::Orientation(polyshape[i])) {
-            ClipperLib::ReversePolygon(polyshape[i]);
+        if (Orientation(polyshape[i])) {
+            ReversePath(polyshape[i]);
             #ifdef DEBUG
             if (debug > 0) std::cout << "doFixOrientation: innerPoints reversed: " << i - 1 << std::endl;
             #endif
@@ -128,8 +139,10 @@ void doFixOrientation(Polygons &polyshape) {
 }
 
 
-v8::Local<String> checkArguments(const Arguments& args, int checkLength) {
-    v8::Local<String> result = String::New("");
+Local<String> checkArguments(const FunctionCallbackInfo<Value>& args, int checkLength) {
+    Isolate* isolate = args.GetIsolate();
+
+    Local<String> result = String::Empty(isolate);
 
     /* check args for wrong function call
      * args[0]: array of outerPoints and innerPoints arrays
@@ -138,17 +151,19 @@ v8::Local<String> checkArguments(const Arguments& args, int checkLength) {
      * args[3]: optional: Jointype (jtMiter, jtSquare or jtRound)
      * args[4]: optional: double MiterLimit
      */
+
     if (args.Length() < 2) {
-        result = String::New("Too few arguments! At least 'polyshape[][][]' and 'pointType' are required!");
+        result = String::NewFromUtf8(isolate, "Too few arguments! At least 'polyshape[][][]' and 'pointType' are required!");
         return result;
     }
+
     if (args.Length() < checkLength) {
-        result = String::New("Too few arguments!");
+        result = String::NewFromUtf8(isolate, "Too few arguments!");
         return result;
     }
 
     if (!args[0]->IsArray()) {
-        result = String::Concat(String::New("Wrong argument 'polyshape': array[shapes][points][point] required: "), args[0]->ToString());
+        result = String::Concat(String::NewFromUtf8(isolate, "Wrong argument 'polyshape': array[shapes][points][point] required: "), args[0]->ToString());
         return result;
     }
 
@@ -156,79 +171,82 @@ v8::Local<String> checkArguments(const Arguments& args, int checkLength) {
         return result;
     }
 
-    if (!args[1]->IsString() || !(args[1]->Equals(String::New("double")) || args[1]->Equals(String::New("integer")))) {
-        result = String::Concat(String::New("Wrong argument 'pointType': 'double' || 'integer' required: "), args[1]->ToString());
+    if (!args[1]->IsString() || !(args[1]->Equals(String::NewFromUtf8(isolate, "double")) || args[1]->Equals(String::NewFromUtf8(isolate, "integer")))) {
+        result = String::Concat(String::NewFromUtf8(isolate, "Wrong argument 'pointType': 'double' || 'integer' required: "), args[1]->ToString());
         return result;
     }
 
     if ((args.Length() > 2) && (checkLength > 2)) {
         if (!args[2]->IsNumber()) {
-            result = String::Concat(String::New("Wrong argument 'delta' || 'distance': number required: "), args[2]->ToString());
+            result = String::Concat(String::NewFromUtf8(isolate, "Wrong argument 'delta' || 'distance': number required: "), args[2]->ToString());
             return result;
         }
     }
 
     if ((args.Length() > 3) && (checkLength > 3)) {
-        if (!args[3]->IsString() || !(args[3]->Equals(String::New("jtMiter")) || args[3]->Equals(String::New("jtSquare")) || args[3]->Equals(String::New("jtRound")))) {
-            result = String::Concat(String::New("Wrong argument 'joinType': 'jtMiter' || 'jtSquare' || 'jtRound' required: "), args[3]->ToString());
+        if (!args[3]->IsString() || !(args[3]->Equals(String::NewFromUtf8(isolate, "jtMiter")) || args[3]->Equals(String::NewFromUtf8(isolate, "jtSquare")) || args[3]->Equals(String::NewFromUtf8(isolate, "jtRound")))) {
+            result = String::Concat(String::NewFromUtf8(isolate, "Wrong argument 'joinType': 'jtMiter' || 'jtSquare' || 'jtRound' required: "), args[3]->ToString());
             return result;
         }
     }
 
     if ((args.Length() > 4) && (checkLength > 4)) {
         if (!args[4]->IsNumber()) {
-            result = String::Concat(String::New("Wrong argument 'miterLimit': number required: "), args[4]->ToString());
+            result = String::Concat(String::NewFromUtf8(isolate, "Wrong argument 'miterLimit': number required: "), args[4]->ToString());
             return result;
         }
     }
+
     return result;
 }
 
 
-v8::Handle<Value> orientation(const Arguments& args) {
-    v8::HandleScope scope;
+void orientation(const FunctionCallbackInfo<Value>& args) {
+    Isolate* isolate = args.GetIsolate();
 
     bool doubleType = false;
 
-    v8::Local<String> errMsg = checkArguments(args, 2);
+    Local<String> errMsg = checkArguments(args, 2);
     if (errMsg->Length() > 0) {
-        ThrowException(Exception::TypeError(errMsg));
-        return scope.Close(v8::Undefined());
+        isolate->ThrowException(Exception::TypeError(errMsg));
+        return;
     }
 
-    if (args[1]->Equals(String::New("double"))) {
+    if (args[1]->Equals(String::NewFromUtf8(isolate, "double"))) {
         doubleType = true;
     }
 
-    Polygons polyshape = v8ArrayToPolygons(v8::Local<v8::Array>::Cast(args[0]), doubleType);
+    Paths polyshape = v8ArrayToPolygons(Local<Array>::Cast(args[0]), doubleType);
     if (polyshape.size() <= 0) {
-        return scope.Close(v8::Undefined());
+        return;
     }
 
-    v8::Handle<v8::Array> orientations = v8::Array::New();
+    Handle<Array> orientations = Array::New(isolate);
     for (unsigned int i = 0; i < polyshape.size(); i++) {
-        bool polyOrientation = ClipperLib::Orientation(polyshape[i]);
-        orientations->Set(orientations->Length(), v8::Boolean::New(polyOrientation));
+        bool polyOrientation = Orientation(polyshape[i]);
+        orientations->Set(orientations->Length(), Boolean::New(isolate, polyOrientation));
     }
 
-    return scope.Close(orientations);
+    args.GetReturnValue().Set(orientations);
 }
 
-v8::Handle<Value> offset(const Arguments& args) {
-    v8::HandleScope scope;
+
+void offset(const FunctionCallbackInfo<Value>& args) {
+    Isolate* isolate = args.GetIsolate();
 
     JoinType joinType = jtMiter;
+    EndType_ endType = etClosed;
     double miterLimit = 30.0;
     long delta;
     bool doubleType = false;
 
-    v8::Local<String> errMsg = checkArguments(args, 3);
+    Local<String> errMsg = checkArguments(args, 3);
     if (errMsg->Length() > 0) {
-        ThrowException(Exception::TypeError(errMsg));
-        return scope.Close(v8::Undefined());
+        isolate->ThrowException(Exception::TypeError(errMsg));
+        return;
     }
 
-    if (args[1]->Equals(String::New("double"))) {
+    if (args[1]->Equals(String::NewFromUtf8(isolate, "double"))) {
         doubleType = true;
     }
 
@@ -242,17 +260,17 @@ v8::Handle<Value> offset(const Arguments& args) {
     #endif
 
     if (args.Length() > 3) {
-        if (args[3]->Equals(String::New("jtMiter"))) {
+        if (args[3]->Equals(String::NewFromUtf8(isolate, "jtMiter"))) {
             joinType = jtMiter;
         }
-        if (args[3]->Equals(String::New("jtSquare"))) {
+        if (args[3]->Equals(String::NewFromUtf8(isolate, "jtSquare"))) {
             joinType = jtSquare;
         }
-        if (args[3]->Equals(String::New("jtRound"))) {
+        if (args[3]->Equals(String::NewFromUtf8(isolate, "jtRound"))) {
             joinType = jtRound;
         }
         #ifdef DEBUG
-        if (debug > 0) std::cout << "args[3]: joinType: " << *v8::String::AsciiValue(args[3]) << std::endl;
+        if (debug > 0) std::cout << "args[3]: joinType: " << *String::Utf8Value(args[3]) << std::endl;
         #endif
     }
 
@@ -263,57 +281,56 @@ v8::Handle<Value> offset(const Arguments& args) {
         #endif
     }
 
-    Polygons polyshape = v8ArrayToPolygons(v8::Local<v8::Array>::Cast(args[0]), doubleType);
+    Paths polyshape = v8ArrayToPolygons(Local<Array>::Cast(args[0]), doubleType);
     doFixOrientation(polyshape);
-    Polygons polyshapeOut;
+    Paths polyshapeOut;
 
     #ifdef DEBUG
     if (debug > 1) std::cout << "before Offset: polyshape.size(): " << polyshape.size() << std::endl;
     #endif
-    //void OffsetPolygons(const Polygons &in_polys, Polygons &out_polys, double delta, JoinType jointype = jtSquare, double MiterLimit = 2.0);
-    ClipperLib::OffsetPolygons(polyshape, polyshapeOut, delta, joinType, miterLimit);
+    //void OffsetPaths(const Paths &in_polys, Paths &out_polys, double delta, JoinType jointype = jtSquare, EndType endtype = etClosed, double limit = 0.0);
+    OffsetPaths(polyshape, polyshapeOut, delta, joinType, endType, miterLimit);
     #ifdef DEBUG
     if (debug > 1) std::cout << "after  Offset: polyshapeOut.size(): " << polyshapeOut.size() << std::endl;
     #endif
 
     if (polyshapeOut.size() > 0) {
-        return scope.Close(polygonsToV8Array(polyshapeOut, doubleType));
+        args.GetReturnValue().Set(polygonsToV8Array(isolate, polyshapeOut, doubleType));
     }
-
-    return scope.Close(v8::Undefined());
 }
 
 
-v8::Handle<Value> minimum(const Arguments& args) {
-    v8::HandleScope scope;
+void minimum(const FunctionCallbackInfo<Value>& args) {
+    Isolate* isolate = args.GetIsolate();
     const unsigned long ScaleMax = doubleFactor - 1;
 
     JoinType joinType = jtMiter;
+    EndType_ endType = etClosed;
     double miterLimit = 30.0;
     bool doubleType = false;
 
-    v8::Local<String> errMsg = checkArguments(args, 2);
+    Local<String> errMsg = checkArguments(args, 2);
     if (errMsg->Length() > 0) {
-        ThrowException(Exception::TypeError(errMsg));
-        return scope.Close(v8::Undefined());
+        isolate->ThrowException(Exception::TypeError(errMsg));
+        return;
     }
 
-    if (args[1]->Equals(String::New("double"))) {
+    if (args[1]->Equals(String::NewFromUtf8(isolate, "double"))) {
         doubleType = true;
     }
 
     if (args.Length() > 3) {
-        if (args[3]->Equals(String::New("jtMiter"))) {
+        if (args[3]->Equals(String::NewFromUtf8(isolate, "jtMiter"))) {
             joinType = jtMiter;
         }
-        if (args[3]->Equals(String::New("jtSquare"))) {
+        if (args[3]->Equals(String::NewFromUtf8(isolate, "jtSquare"))) {
             joinType = jtSquare;
         }
-        if (args[3]->Equals(String::New("jtRound"))) {
+        if (args[3]->Equals(String::NewFromUtf8(isolate, "jtRound"))) {
             joinType = jtRound;
         }
         #ifdef DEBUG
-        if (debug > 0) std::cout << "args[3]: joinType: " << *v8::String::AsciiValue(args[3]) << std::endl;
+        if (debug > 0) std::cout << "args[3]: joinType: " << *String::Utf8Value(args[3]) << std::endl;
         #endif
     }
 
@@ -324,13 +341,13 @@ v8::Handle<Value> minimum(const Arguments& args) {
         #endif
     }
 
-    Polygons polyshape = v8ArrayToPolygons(v8::Local<v8::Array>::Cast(args[0]), doubleType);
+    Paths polyshape = v8ArrayToPolygons(Local<Array>::Cast(args[0]), doubleType);
     if (polyshape.size() <= 0) {
-        return scope.Close(v8::Undefined());
+        return;
     }
     doFixOrientation(polyshape);
 
-    Polygons polyshapeOut(polyshape.size());
+    Paths polyshapeOut(polyshape.size());
     long xMin = 0, xMax = 0, yMin = 0, yMax = 0, xScale = 0, yScale = 0, xyScale = 0;
 
     for (unsigned int i = 0; i < polyshape[0].size(); i++) {
@@ -358,14 +375,14 @@ v8::Handle<Value> minimum(const Arguments& args) {
     int loops = 0;
     long scale = xyScale;
     #ifdef DEBUG
-    if (debug > 1) std::cout << "OffsetPolygons: xyScale: " << xyScale << std::endl;
+    if (debug > 1) std::cout << "OffsetPaths: xyScale: " << xyScale << std::endl;
     #endif
     long lastScale = 2;
     do {
         loops++;
-        //void OffsetPolygons(const Polygons &in_polys, Polygons &out_polys, double delta, JoinType jointype = jtSquare, double MiterLimit = 2.0);
+        //void OffsetPaths(const Paths &in_polys, Paths &out_polys, double delta, JoinType jointype = jtSquare, EndType endtype = etClosed, double limit = 0.0);
         try {
-            ClipperLib::OffsetPolygons(polyshape, polyshapeOut, s * scale, joinType, miterLimit);
+            OffsetPaths(polyshape, polyshapeOut, s * scale, joinType, endType, miterLimit);
         }
         catch (...) {
             miterLimit /= 2;
@@ -389,8 +406,8 @@ v8::Handle<Value> minimum(const Arguments& args) {
         }
         lastScale = (lastScale << 1) & ScaleMax;
         #ifdef DEBUG
-        if (debug > 1) std::cout << "OffsetPolygons: scale:     " << scale << std::endl;
-        if (debug > 1) std::cout << "OffsetPolygons: lastScale: " << lastScale << std::endl;
+        if (debug > 1) std::cout << "OffsetPaths: scale:     " << scale << std::endl;
+        if (debug > 1) std::cout << "OffsetPaths: lastScale: " << lastScale << std::endl;
         #endif
     } while (lastScale != 0 || loops > 64);
     #ifdef DEBUG
@@ -398,58 +415,56 @@ v8::Handle<Value> minimum(const Arguments& args) {
     #endif
 
     if (polyshapeOut.size() > 0) {
-        return scope.Close(polygonsToV8Array(polyshapeOut, doubleType));
+        args.GetReturnValue().Set(polygonsToV8Array(isolate, polyshapeOut, doubleType));
     }
-
-    return scope.Close(v8::Undefined());
 }
 
 
-v8::Handle<Value> clip(const Arguments& args) {
-    v8::HandleScope scope;
+void clip(const FunctionCallbackInfo<Value>& args) {
+    Isolate* isolate = args.GetIsolate();
     bool doubleType = false;
     ClipType clipType = ctIntersection;
 
-    v8::Local<String> errMsg = checkArguments(args, 1);
+    Local<String> errMsg = checkArguments(args, 1);
     if (errMsg->Length() > 0) {
-        ThrowException(Exception::TypeError(errMsg));
-        return scope.Close(v8::Undefined());
+        isolate->ThrowException(Exception::TypeError(errMsg));
+        return;
     }
 
-    if (args[2]->Equals(String::New("double"))) {
+    if (args[2]->Equals(String::NewFromUtf8(isolate, "double"))) {
         doubleType = true;
     }
 
     if (args.Length() > 3) {
-        if (args[3]->Equals(String::New("ctUnion"))) {
+        if (args[3]->Equals(String::NewFromUtf8(isolate, "ctUnion"))) {
             clipType = ctUnion;
         }
-        if (args[3]->Equals(String::New("ctDifference"))) {
+        if (args[3]->Equals(String::NewFromUtf8(isolate, "ctDifference"))) {
             clipType = ctDifference;
         }
-        if (args[3]->Equals(String::New("ctXor"))) {
+        if (args[3]->Equals(String::NewFromUtf8(isolate, "ctXor"))) {
             clipType = ctXor;
         }
         #ifdef DEBUG
-        if (debug > 0) std::cout << "args[3]: clipType: " << *v8::String::AsciiValue(args[3]) << std::endl;
+        if (debug > 0) std::cout << "args[3]: clipType: " << *String::Utf8Value(args[3]) << std::endl;
         #endif
     }
 
     Clipper clipper;
 
-    Polygons polyshape = v8ArrayToPolygons(v8::Local<v8::Array>::Cast(args[0]), doubleType);
+    Paths polyshape = v8ArrayToPolygons(Local<Array>::Cast(args[0]), doubleType);
     if (polyshape.size() <= 0) {
-        return scope.Close(v8::Undefined());
+        return;
     }
-    clipper.AddPolygons(polyshape, ptSubject);
+    clipper.AddPaths(polyshape, ptSubject, true);
 
-    polyshape = v8ArrayToPolygons(v8::Local<v8::Array>::Cast(args[1]), doubleType);
+    polyshape = v8ArrayToPolygons(Local<Array>::Cast(args[1]), doubleType);
     if (polyshape.size() <= 0) {
-        return scope.Close(v8::Undefined());
+        return;
     }
-    clipper.AddPolygons(polyshape, ptClip);
+    clipper.AddPaths(polyshape, ptClip, true);
 
-    Polygons clipperSolution;
+    Paths clipperSolution;
 
     clipper.Execute(clipType, clipperSolution, pftNonZero, pftNonZero);
 
@@ -457,15 +472,15 @@ v8::Handle<Value> clip(const Arguments& args) {
     if (debug > 1) std::cout << "clipperSolution.size(): " << clipperSolution.size() << std::endl;
     #endif
 
-    v8::Handle<v8::Array> solutions = v8::Array::New();
-    Polygons singleSolution;
+    Handle<Array> solutions = Array::New(isolate);
+    Paths singleSolution;
     unsigned int i = 0;
     while (i < clipperSolution.size()) {
         do {
             singleSolution.push_back(clipperSolution[i]);
             i++;
-        } while (i < clipperSolution.size() && !ClipperLib::Orientation(clipperSolution[i]));
-        solutions->Set(solutions->Length(), polygonsToV8Array(singleSolution, doubleType));
+        } while (i < clipperSolution.size() && !Orientation(clipperSolution[i]));
+        solutions->Set(solutions->Length(), polygonsToV8Array(isolate, singleSolution, doubleType));
         singleSolution.clear();
     }
     #ifdef DEBUG
@@ -473,117 +488,113 @@ v8::Handle<Value> clip(const Arguments& args) {
     #endif
 
     if (solutions->Length() > 0) {
-        return scope.Close(solutions);
-    } else {
-        return scope.Close(v8::Undefined());
+        args.GetReturnValue().Set(solutions);
     }
 }
 
 
-v8::Handle<Value> clean(const Arguments& args) {
-    v8::HandleScope scope;
+void clean(const FunctionCallbackInfo<Value>& args) {
+    Isolate* isolate = args.GetIsolate();
     bool doubleType = false;
     double distance = 1.415;
 
-    v8::Local<String> errMsg = checkArguments(args, 2);
+    Local<String> errMsg = checkArguments(args, 2);
     if (errMsg->Length() > 0) {
-        ThrowException(Exception::TypeError(errMsg));
-        return scope.Close(v8::Undefined());
+        isolate->ThrowException(Exception::TypeError(errMsg));
+        return;
     }
 
-    if (args[1]->Equals(String::New("double"))) {
+    if (args[1]->Equals(String::NewFromUtf8(isolate, "double"))) {
         doubleType = true;
     }
 
     if (args.Length() > 2) {
         distance = args[2]->NumberValue();
         #ifdef DEBUG
-        if (debug > 0) std::cout << "args[2]: distance: " << *v8::String::AsciiValue(args[2]) << std::endl;
+        if (debug > 0) std::cout << "args[2]: distance: " << *String::Utf8Value(args[2]) << std::endl;
         #endif
     }
 
-    Polygons polyshape = v8ArrayToPolygons(v8::Local<v8::Array>::Cast(args[0]), doubleType);
-    Polygons polyshapeOut(polyshape.size());
+    Paths polyshape = v8ArrayToPolygons(Local<Array>::Cast(args[0]), doubleType);
+    Paths polyshapeOut(polyshape.size());
 
     #ifdef DEBUG
     if (debug > 1) std::cout << "before CleanPolygons: polyshape.size(): " << polyshape.size() << std::endl;
     #endif
     //void CleanPolygons(Polygons &in_polys, Polygon &out_polys, double distance = 1.415);
-    ClipperLib::CleanPolygons(polyshape, polyshapeOut, distance);
+    CleanPolygons(polyshape, polyshapeOut, distance);
     #ifdef DEBUG
     if (debug > 1) std::cout << "after  CleanPolygons: polyshapeOut.size(): " << polyshapeOut.size() << std::endl;
     #endif
 
     if (polyshapeOut.size() > 0) {
-        return scope.Close(polygonsToV8Array(polyshapeOut, doubleType));
+        args.GetReturnValue().Set(polygonsToV8Array(isolate, polyshape, doubleType));
     }
-
-    return scope.Close(v8::Undefined());
 }
 
 
-v8::Handle<Value> fixOrientation(const Arguments& args) {
-    v8::HandleScope scope;
+void fixOrientation(const FunctionCallbackInfo<Value>& args) {
+    Isolate* isolate = args.GetIsolate();
     bool doubleType = false;
 
-    v8::Local<String> errMsg = checkArguments(args, 2);
+    Local<String> errMsg = checkArguments(args, 2);
     if (errMsg->Length() > 0) {
-        ThrowException(Exception::TypeError(errMsg));
-        return scope.Close(v8::Undefined());
+        isolate->ThrowException(Exception::TypeError(errMsg));
+        return;
     }
 
-    if (args[1]->Equals(String::New("double"))) {
+    if (args[1]->Equals(String::NewFromUtf8(isolate, "double"))) {
         doubleType = true;
     }
 
 
-    Polygons polyshape = v8ArrayToPolygons(v8::Local<v8::Array>::Cast(args[0]), doubleType);
+    Paths polyshape = v8ArrayToPolygons(Local<Array>::Cast(args[0]), doubleType);
     doFixOrientation(polyshape);
 
     if (polyshape.size() > 0) {
-        return scope.Close(polygonsToV8Array(polyshape, doubleType));
+        args.GetReturnValue().Set(polygonsToV8Array(isolate, polyshape, doubleType));
     }
-
-    return scope.Close(v8::Undefined());
 }
 
 
-v8::Handle<Value> simplify(const Arguments& args) {
-    v8::HandleScope scope;
+void simplify(const FunctionCallbackInfo<Value>& args) {
+    Isolate* isolate = args.GetIsolate();
     bool doubleType = false;
 
-    v8::Local<String> errMsg = checkArguments(args, 2);
+    Local<String> errMsg = checkArguments(args, 2);
     if (errMsg->Length() > 0) {
-        ThrowException(Exception::TypeError(errMsg));
-        return scope.Close(v8::Undefined());
+        isolate->ThrowException(Exception::TypeError(errMsg));
+        return;
     }
 
-    if (args[1]->Equals(String::New("double"))) {
+    if (args[1]->Equals(String::NewFromUtf8(isolate, "double"))) {
         doubleType = true;
     }
 
 
-    Polygons polyshape = v8ArrayToPolygons(v8::Local<v8::Array>::Cast(args[0]), doubleType);
-    ClipperLib::SimplifyPolygons(polyshape, polyshape, pftNonZero);
+    Paths polyshape = v8ArrayToPolygons(Local<Array>::Cast(args[0]), doubleType);
+    SimplifyPolygons(polyshape, polyshape, pftNonZero);
 
     if (polyshape.size() > 0) {
-        return scope.Close(polygonsToV8Array(polyshape, doubleType));
+        args.GetReturnValue().Set(polygonsToV8Array(isolate, polyshape, doubleType));
     }
-
-    return scope.Close(v8::Undefined());
 }
 
 
-
-extern "C" void init(Handle<Object> target) {
-    target->Set(String::NewSymbol("setDebug"), FunctionTemplate::New(setDebug)->GetFunction());
-    target->Set(String::NewSymbol("orientation"), FunctionTemplate::New(orientation)->GetFunction());
-    target->Set(String::NewSymbol("offset"), FunctionTemplate::New(offset)->GetFunction());
-    target->Set(String::NewSymbol("minimum"), FunctionTemplate::New(minimum)->GetFunction());
-    target->Set(String::NewSymbol("clip"), FunctionTemplate::New(clip)->GetFunction());
-    target->Set(String::NewSymbol("clean"), FunctionTemplate::New(clean)->GetFunction());
-    target->Set(String::NewSymbol("fixOrientation"), FunctionTemplate::New(fixOrientation)->GetFunction());
-    target->Set(String::NewSymbol("simplify"), FunctionTemplate::New(simplify)->GetFunction());
+void Init(Local<Object> exports) {
+    NODE_SET_METHOD(exports, "setDebug", setDebug);
+    NODE_SET_METHOD(exports, "orientation", orientation);
+    NODE_SET_METHOD(exports, "offset", offset);
+    NODE_SET_METHOD(exports, "minimum", minimum);
+    NODE_SET_METHOD(exports, "clip", clip);
+    NODE_SET_METHOD(exports, "clean", clean);
+    NODE_SET_METHOD(exports, "fixOrientation", fixOrientation);
+    NODE_SET_METHOD(exports, "simplify", simplify);
 }
 
-NODE_MODULE(clipper, init)
+// Register the module with node. Note that "modulename" must be the same as
+// the basename of the resulting .node file. You can specify that name in
+// binding.gyp ("target_name"). When you change it there, change it here too.
+NODE_MODULE(clipper, Init);
+
+}
