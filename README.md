@@ -60,7 +60,7 @@ Example:
 ```javascript
 'use strict';
 
-var clipper= require('../build/Release/clipper');
+var clipper= require('rl3-clipper');
 
 var square= [ [ [0, 0], [0, 10], [10, 10], [10, 0] ] ];
 
@@ -95,7 +95,7 @@ Example:
 ```javascript
 'use strict';
 
-var clipper= require('../build/Release/clipper');
+var clipper= require('rl3-clipper');
 
 var squareOuter= [ [10, 0], [10, 10], [0, 10], [0, 0] ];
 var squareInner= [ [3, 3], [3, 7], [7, 7], [7, 3] ];
@@ -122,7 +122,7 @@ See the [clipper documentation for offset](http://www.angusj.com/delphi/clipper/
 ```javascript
 'use strict';
 
-var clipper= require('../build/Release/clipper');
+var clipper= require('rl3-clipper');
 
 var squareOuter= [ [10, 0], [10, 10], [0, 10], [0, 0] ];
 var squareInner= [ [3, 3], [3, 7], [7, 7], [7, 3] ];
@@ -154,7 +154,7 @@ Generate minimum polygon from polyShape. Read comments in the example to see, ho
 ```javascript
 'use strict';
 
-var clipper= require('../build/Release/clipper');
+var clipper= require('rl3-clipper');
 
 var squareOuter= [ [10, 0], [100, 100], [0, 10], [0, 0] ];
 var squareInner= [ [3, 3], [3, 7], [7, 7], [7, 3] ];
@@ -191,7 +191,7 @@ Clip two polygons. The result may produce multiple polygons. See also the [clipp
 ```javascript
 'use strict';
 
-var clipper= require('../build/Release/clipper');
+var clipper= require('rl3-clipper');
 var util= require('util');
 
 var outerSubject= [ [10, 0], [100, 100], [0, 10], [0, 0] ];
@@ -230,7 +230,7 @@ Clean polygon. See also the [clipper documentation for clean](http://www.angusj.
 ```javascript
 'use strict';
 
-var clipper= require('../build/Release/clipper');
+var clipper= require('rl3-clipper');
 
 var outer= [ [10, 0], [100, 100], [0, 10], [0, 0] ];
 var inner= [ [3, 3], [3, 7], [7, 6], [7, 3] ];
@@ -259,7 +259,7 @@ Simplify polygon. See also the [clipper documentation for simplify](http://www.a
 ```javascript
 'use strict';
 
-var clipper= require('../build/Release/clipper');
+var clipper= require('rl3-clipper');
 
 var outer= [ [10, 0], [100, 100], [101, 100], [100, 100], [0, 10], [0, 0] ];
 var inner= [ [3, 3], [3, 7], [7, 6], [7, 3] ];
@@ -287,7 +287,7 @@ Fix orientation of all polygons an a polyShape array.
 ```javascript
 'use strict';
 
-var clipper= require('../build/Release/clipper');
+var clipper= require('rl3-clipper');
 
 var counterclockwise= [ [10, 0], [10, 10], [0, 10], [0, 0] ];
 var clockwise= [ [3, 3], [7, 7], [3, 7], [7, 3] ];
