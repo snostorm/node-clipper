@@ -9,6 +9,13 @@ The wrapper exposes and extends functions of clipper library to node.js. The fun
 ## Installation
 
 ```bash
+npm install --save rl3-clipper
+```
+
+## Build from source
+
+Clone the project and build the project
+```bash
 node-gyp configure
 node-gyp build
 ```
