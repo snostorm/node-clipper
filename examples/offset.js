@@ -1,18 +1,24 @@
-clipper = require('../build/Release/clipper')
+'use strict';
 
-/*a
-  ## Offset
-  * arguments: flattened_coordinate_path, offset
-  * where: offset can be positive or negative (negative will go inside the polygon, positive will expand outside)
-*/
-flattened_coordinate_path = [0, 0, 0, 10, 10, 10, 10, 0]
+var clipper= require('../build/Release/clipper');
 
-// A negative offset gets an offset inside our Polygon:
-inner_highlight_path = clipper.offset(flattened_coordinate_path, -2)
-console.log(inner_highlight_path)
-// returns [ [ 2, 2, 8, 2, 8, 8, 2, 8 ] ]
+var squareOuter= [ [10, 0], [10, 10], [0, 10], [0, 0] ];
+var squareInner= [ [3, 3], [3, 7], [7, 7], [7, 3] ];
+var polyShape= [ squareOuter, squareInner ];
 
-// A positive offset gets an offset outside our Polygon:
-outter_highlight_path = clipper.offset(flattened_coordinate_path, 2)
-console.log(outter_highlight_path)
-// returns [ [ -2, 12, -2, -2, 12, -2, 12, 12 ] ]
+/*
+ * offset polygons in a polyShape array.
+ * positive offset: outer borders are expanded, inner borders are shrinked
+ * negative offset: outer borders are shrinked, inner borders are expanded
+ *
+ * result= clipper.offset(polyShape, numberType, offset);
+ *
+ * polyShape:  polygons as polyShape array
+ * numberType: 'integer' || 'double'
+ * offset:     number
+ *
+ * result:     polyShape with offset
+ */
+console.log('original polygon:\n', polyShape);
+console.log('\n\nshrinked, offset= -1:\n', clipper.offset(polyShape, 'integer', -1));
+console.log('\n\nexpanded, offset= 2, inner border disappears:\n', clipper.offset(polyShape, 'integer', 2));
