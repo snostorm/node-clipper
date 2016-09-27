@@ -1,19 +1,34 @@
 {
-  "name": "clipper",
-  "version": "v0.2.0",
+  "name": "rl3-clipper",
+  "version": "0.2.1",
   "main": "./lib/clipper.js",
-  "keywords": ["polygon", "polygons", "offset"],
+  "keywords": [
+    "polygon",
+    "polygons",
+    "offset"
+  ],
   "description": "Clipper Library Bindings",
-  "author": { 
-    "name" : "runlevel3 GmbH, Berlin",
-    "email" : "info@runlevel3.de",
-    "url" : "https://www.runlevel3.de/"
-  },
+  "author": "runlevel3 GmbH, Berlin <info@runlevel3.de> (https://www.runlevel3.de/)",
   "engines": {
     "node": ">=2.0.0"
   },
-  "repository" : { 
-    "type" : "git",
-    "url" : "https://github.com/rl3/node-clipper.git"
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rl3/node-clipper.git"
+  },
+  "scripts": {
+    "install": "node-gyp rebuild"
+  },
+  "gypfile": true,
+  "bugs": {
+    "url": "https://github.com/rl3/node-clipper/issues"
+  },
+  "homepage": "https://github.com/rl3/node-clipper#readme",
+  "directories": {
+    "example": "examples"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "node-gyp": "^3.4.0"
   }
 }
